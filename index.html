@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>HLEB GAME — платформа ИИ-игр</title>
+    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0c10; font-family: 'Unbounded', sans-serif; color: #f0f3f8; overflow-x: hidden; }
+        .animated-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; background: radial-gradient(circle at 20% 30%, #0f1219, #030507); }
+        .grid-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(rgba(60,80,120,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(60,80,120,0.08) 1px, transparent 1px); background-size: 48px 48px; z-index: -1; pointer-events: none; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 3rem 1.5rem 4rem; position: relative; z-index: 2; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes glowPulse { 0% { text-shadow: 0 0 5px rgba(255,215,0,0.3); } 100% { text-shadow: 0 0 20px rgba(255,215,0,0.7); } }
+        .hero { display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 3rem; animation: fadeInUp 0.9s forwards; }
+        .logo-svg { width: 130px; height: auto; filter: drop-shadow(0 0 12px rgba(218,165,32,0.6)); transition: transform 0.3s; margin-bottom: 1.2rem; cursor: pointer; }
+        .logo-svg:hover { transform: scale(1.03); filter: drop-shadow(0 0 22px rgba(218,165,32,0.9)); }
+        .logo-svg svg { width: 100%; height: auto; display: block; }
+        h1 { font-size: clamp(2.6rem, 8vw, 5rem); font-weight: 800; background: linear-gradient(135deg, #FFF6E0, #E4B363); background-clip: text; -webkit-background-clip: text; color: transparent; animation: glowPulse 2s infinite alternate; }
+        .tagline { font-size: 1rem; color: #b9c7d9; background: rgba(20,25,35,0.6); backdrop-filter: blur(4px); display: inline-block; padding: 0.4rem 1.2rem; border-radius: 40px; border: 1px solid rgba(228,179,99,0.3); }
+        .section-title { font-size: 1.5rem; font-weight: 600; margin: 2rem 0 1.2rem; color: #e4b363; border-left: 3px solid #e4b363; padding-left: 1rem; }
+        .games-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 2rem; margin: 1rem 0; }
+        .game-card { background: rgba(18,22,32,0.7); backdrop-filter: blur(12px); border-radius: 2rem; border: 1px solid rgba(228,179,99,0.25); padding: 1.5rem; width: 280px; text-align: center; transition: all 0.35s; cursor: pointer; animation: fadeInUp 0.7s ease backwards; box-shadow: 0 12px 28px -8px rgba(0,0,0,0.5); }
+        .game-card:hover { transform: translateY(-8px); border-color: rgba(228,179,99,0.7); background: rgba(25,30,42,0.85); box-shadow: 0 25px 35px -12px rgba(0,0,0,0.6); }
+        .game-image { width: 100%; aspect-ratio: 1 / 1; border-radius: 1.2rem; overflow: hidden; margin-bottom: 1rem; background: #0f121b; display: flex; align-items: center; justify-content: center; font-size: 3rem; }
+        .game-image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+        .game-card:hover .game-image img { transform: scale(1.02); }
+        .game-title { font-size: 1.3rem; font-weight: 700; background: linear-gradient(120deg, #f3e5c0, #e4b363); background-clip: text; -webkit-background-clip: text; color: transparent; margin-bottom: 0.4rem; }
+        .author-block { margin: 0.4rem 0 1rem; font-size: 0.7rem; color: #b1c2d8; display: flex; justify-content: center; gap: 0.4rem; flex-wrap: wrap; }
+        .author-name { font-weight: 600; color: #e4b363; background: rgba(228,179,99,0.12); padding: 0.2rem 0.7rem; border-radius: 30px; cursor: pointer; font-size: 0.65rem; border: 0.5px solid rgba(228,179,99,0.3); transition: all 0.2s; }
+        .author-name:hover { background: #e4b363; color: #0a0c14; box-shadow: 0 0 8px rgba(228,179,99,0.6); }
+        .game-link { display: inline-block; background: rgba(228,179,99,0.12); border: 1px solid rgba(228,179,99,0.5); padding: 0.5rem 1.2rem; border-radius: 60px; text-decoration: none; color: #f5e2b0; font-weight: 500; font-size: 0.75rem; transition: all 0.25s; }
+        .game-link:hover { background: #e4b363; color: #0a0c10; border-color: #e4b363; box-shadow: 0 0 12px rgba(228,179,99,0.5); }
+        .submit-btn { display: inline-block; background: linear-gradient(135deg, #e4b363, #c49a3e); border: none; padding: 0.8rem 2rem; border-radius: 60px; color: #0a0c10; font-weight: 700; text-decoration: none; margin: 1rem 0; transition: all 0.2s; }
+        .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -8px rgba(228,179,99,0.4); }
+        .loading { text-align: center; padding: 2rem; color: #b9c7d9; }
+        .glow-spot { position: fixed; width: 70vw; height: 70vw; background: radial-gradient(circle, rgba(228,179,99,0.08) 0%, rgba(0,0,0,0) 70%); border-radius: 50%; pointer-events: none; z-index: 0; top: -20%; right: -20%; }
+        footer { text-align: center; margin-top: 3rem; font-size: 0.7rem; color: #5f6e85; border-top: 1px solid rgba(228,179,99,0.2); padding-top: 2rem; }
+        @media (max-width: 650px) { .game-card { width: 100%; max-width: 280px; } .logo-svg { width: 100px; } }
+    </style>
+</head>
+<body>
+<div class="animated-bg"></div>
+<div class="grid-overlay"></div>
+<div class="glow-spot"></div>
+
+<div class="container">
+    <div class="hero">
+        <div class="logo-svg" onclick="location.reload()">
+            <svg width="86.0736" height="117.41747" viewBox="0,0,86.0736,117.41747">
+                <g transform="translate(-197.48673,-136.23229)">
+                    <path d="M233.82314,247.5956v-43.68606h7.50164c0,0 -2.60607,14.70562 1.1849,27.31117c1.85072,6.15394 11.61203,12.47958 11.61203,15.05107c0,4.06737 -12.79693,1.32382 -12.79693,1.32382z" fill="#a0783d"/>
+                    <path d="M223.08659,252.74489v-43.68606h7.50165c0,0 -2.60607,14.70562 1.1849,27.31117c1.85072,6.15395 11.61203,12.47959 11.61203,15.05107c0,4.06737 -12.79693,1.32382 -12.79693,1.32382z" fill="#b28644"/>
+                    <path d="M267.88192,184.3647c2.95912,0 5.35796,10.69198 5.35796,23.88119c0,13.18921 8.14137,30.83451 -4.13328,33.06626c-4.91736,0.89407 -6.31249,-1.92172 -6.21829,-6.46642c0.07958,-3.83914 3.6713,-7.99354 4.65098,-13.10605c0.75548,-3.94252 -2.6165,-37.37498 0.34262,-37.37498z" fill="#a0783d"/>
+                    <path d="M200.36625,210.99981c0,0 4.02277,-12.04237 0.48767,-30.67954c-2.1421,-11.29325 -6.56478,-27.38435 0.39785,-34.6544c9.72938,-10.15896 21.94625,-9.64617 36.04695,-9.28543c12.64306,0.32345 29.92827,4.24336 40.26395,13.6743c9.46153,8.63331 -1.3622,17.0749 -3.8413,29.84799c-2.52027,12.98526 0.39504,25.44958 -1.58603,30.23916c-0.57314,1.38565 -71.76909,0.85792 -71.76909,0.85792z" fill="#d09c4f"/>
+                    <path d="M200.30487,211.54989c0,0 3.6978,-10.74688 0.47542,-28.05391c-0.87865,-4.71911 -2.17822,-10.34038 -2.76371,-15.71148c3.44758,0.48018 12.14829,-0.06927 15.5855,1.11655c21.46927,7.40682 30.68955,19.12214 52.80018,19.9527c-0.9787,10.09258 -0.16999,20.97071 -0.28028,21.24234c-0.52244,1.28675 -63.98883,0.53966 -63.98883,0.53966z" fill="#b28644"/>
+                    <path d="M213.76458,210.97516c0,0 1.86121,-9.83275 -1.34681,-27.13978c-1.94391,-10.48725 -5.95738,-25.42992 0.36103,-32.1811c16.74565,-17.89261 46.85785,-18.9272 66.69797,-0.40179c8.58611,8.01715 1.31617,20.33369 -0.93355,32.19516c-2.12009,11.17807 -0.94365,26.66311 -1.07492,26.98786c-0.52011,1.28675 -63.70372,0.53966 -63.70372,0.53966z" fill="#ffefc9"/>
+                    <path d="M213.89216,210.81583c0,0 1.86954,-9.83275 -1.35284,-27.13978c-0.87865,-4.71911 -2.17822,-10.34038 -2.76371,-15.71148c3.44758,0.48018 6.96823,0.84486 10.40544,2.03068c21.46927,7.40682 35.86961,18.20801 57.98025,19.03857c-0.9787,10.09258 -0.16999,20.97071 -0.28028,21.24234c-0.52244,1.28675 -63.98883,0.53966 -63.98883,0.53966z" fill="#ecdebb"/>
+                    <path d="M258.5315,192.7876c-2.6,0 -2.60001,-4.17855 -2.60001,-4.17855v-0.47907c0,-8.13646 -0.19997,-16.00458 -0.58853,-24.11245c0,0 -0.19941,-4.16624 2.39293,-4.48672c2.59234,-0.32048 2.79175,3.84576 2.79175,3.84576c0.3975,8.31553 0.60385,16.409 0.60385,24.7534v0.47907c0,0 0,4.17855 -2.6,4.17855z" fill="#ae8342"/>
+                </g>
+            </svg>
+        </div>
+        <h1>HLEB GAME</h1>
+        <div class="tagline">платформа ИИ-игр</div>
+    </div>
+
+    <div class="section-title">✦ Каталог игр</div>
+    <div class="games-grid" id="allGamesGrid">
+        <div class="loading">📡 Загрузка игр...</div>
+    </div>
+
+    <div style="text-align: center; margin: 2rem 0;">
+        <a href="submit-game.html" class="submit-btn">➕ Подать игру</a>
+    </div>
+
+    <footer>
+        <span>HLEB GAME © 2026 — платформа ИИ-игр</span><br>
+        <span style="font-size: 0.65rem;">AI-powered · neural sandbox</span>
+    </footer>
+</div>
+
+<script>
+    // ========== ВАША ПОДКЛЮЧЁННАЯ ТАБЛИЦА ==========
+    // ID таблицы: 1booeuNMQW6q1drFmCo-8W0ydSIug0gSz92RneTWTFSc
+    const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/1booeuNMQW6q1drFmCo-8W0ydSIug0gSz92RneTWTFSc/export?format=csv&gid=0';
+    
+    async function loadGames() {
+        const container = document.getElementById('allGamesGrid');
+        container.innerHTML = '<div class="loading">📡 Загрузка игр...</div>';
+        
+        try {
+            const response = await fetch(GOOGLE_SHEETS_CSV_URL + '?t=' + Date.now());
+            if (response.ok) {
+                const csvText = await response.text();
+                const games = parseCSVtoGames(csvText);
+                renderGames(games);
+                localStorage.setItem('hleb_games_cache', JSON.stringify(games));
+                localStorage.setItem('hleb_games_time', Date.now().toString());
+            } else {
+                const cached = localStorage.getItem('hleb_games_cache');
+                if (cached) {
+                    renderGames(JSON.parse(cached));
+                } else {
+                    container.innerHTML = '<div class="loading">⚠️ Нет подключения к интернету и нет кэша игр</div>';
+                }
+            }
+        } catch (error) {
+            console.error('Ошибка:', error);
+            const cached = localStorage.getItem('hleb_games_cache');
+            if (cached) {
+                renderGames(JSON.parse(cached));
+            } else {
+                container.innerHTML = '<div class="loading">⚠️ Ошибка загрузки. Попробуйте позже.</div>';
+            }
+        }
+    }
+    
+    function parseCSVtoGames(csvText) {
+        const lines = csvText.split('\n');
+        if (lines.length < 2) return [];
+        
+        const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+        const games = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            
+            const values = parseCSVLine(lines[i]);
+            const game = {};
+            headers.forEach((header, idx) => {
+                game[header] = values[idx] || '';
+            });
+            
+            // Только одобренные игры
+            if (game['Статус'] !== 'approved') continue;
+            
+            games.push({
+                title: game['Название игры'] || 'Без названия',
+                url: convertToDirectLink(game['Ссылка на файл игры']),
+                image: convertToDirectLink(game['Ссылка на аватар']),
+                fallbackIcon: game['Иконка эмодзи'] || '🎮',
+                author: game['Имя автора'] || 'Аноним',
+                authorPage: game['Ссылка на автора'] || '',
+                description: game['Описание'] || ''
+            });
+        }
+        
+        return games;
+    }
+    
+    function convertToDirectLink(url) {
+        if (!url) return '#';
+        
+        // Google Drive -> прямая ссылка
+        if (url.includes('drive.google.com')) {
+            const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+            if (match) {
+                return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+            }
+        }
+        
+        return url;
+    }
+    
+    function parseCSVLine(line) {
+        const result = [];
+        let inQuotes = false;
+        let current = '';
+        
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                result.push(current);
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        result.push(current);
+        
+        return result.map(v => v.replace(/^"|"$/g, '').trim());
+    }
+    
+    function renderGames(games) {
+        const container = document.getElementById('allGamesGrid');
+        
+        if (!games.length) {
+            container.innerHTML = '<div class="loading">✨ Пока нет игр. Станьте первым разработчиком!</div>';
+            return;
+        }
+        
+        container.innerHTML = games.map((game, index) => `
+            <div class="game-card" style="animation-delay: ${index * 0.05}s" data-game-url="${escapeHtml(game.url)}">
+                <div class="game-image">
+                    ${game.image ? `<img src="${escapeHtml(game.image)}" alt="${escapeHtml(game.title)}" onerror="this.style.display='none';this.parentElement.innerHTML='${escapeHtml(game.fallbackIcon)}'">` : `<span>${escapeHtml(game.fallbackIcon)}</span>`}
+                </div>
+                <div class="game-title">${escapeHtml(game.title)}</div>
+                <div class="author-block">
+                    <span class="author-name" data-author-page="${escapeHtml(game.authorPage)}">${escapeHtml(game.author)}</span>
+                </div>
+                <a href="${escapeHtml(game.url)}" class="game-link" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">Играть →</a>
+                ${game.description ? `<div style="font-size:0.7rem; color:#8a9bae; margin-top:0.5rem;">${escapeHtml(game.description.substring(0, 60))}${game.description.length > 60 ? '...' : ''}</div>` : ''}
+            </div>
+        `).join('');
+        
+        bindEvents();
+    }
+    
+    function bindEvents() {
+        document.querySelectorAll('.game-card').forEach(card => {
+            card.removeEventListener('click', cardClickHandler);
+            card.addEventListener('click', cardClickHandler);
+        });
+        
+        document.querySelectorAll('.author-name').forEach(author => {
+            author.removeEventListener('click', authorClickHandler);
+            author.addEventListener('click', authorClickHandler);
+        });
+    }
+    
+    function cardClickHandler(e) {
+        if (e.target.closest('.game-link') || e.target.closest('.author-name')) return;
+        const url = this.getAttribute('data-game-url');
+        if (url && url !== '#') window.open(url, '_blank');
+    }
+    
+    function authorClickHandler(e) {
+        e.stopPropagation();
+        const url = this.getAttribute('data-author-page');
+        if (url && url !== '#') window.open(url, '_blank');
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
+    }
+    
+    loadGames();
+</script>
+</body>
+</html>
